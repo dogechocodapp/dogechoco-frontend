@@ -30,7 +30,7 @@ export default function App() {
       const signer = provider.getSigner();
       const signature = await signer.signMessage(message);
 
-      const res = await fetch("http://localhost:3001/api/send-message", {
+      const res = await fetch("https://dogechoco-backend.onrender.com/api/send-message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ walletAddress, message, signature }),
@@ -51,7 +51,7 @@ export default function App() {
 
   const fetchMessages = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/messages");
+      const res = await fetch("https://dogechoco-backend.onrender.com/api/messages");
       const data = await res.json();
       setMessages(data.reverse());
     } catch (err) {
@@ -67,7 +67,7 @@ export default function App() {
       const signer = provider.getSigner();
       const signature = await signer.signMessage(adminMsg);
 
-      const res = await fetch("http://localhost:3001/api/admin/messages-file", {
+      const res = await fetch("https://dogechoco-backend.onrender.com/api/admin/messages-file", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ signature }),
