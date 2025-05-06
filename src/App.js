@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import logo from "./assets/logo.png";
+import WalletConnectProvider from "@walletconnect/web3-provider";
 
 const ADMIN_WALLET = "0x4794d0B88F5579117Ca8e7ab8FF8b5f95DbD0213".toLowerCase();
 
@@ -17,8 +18,6 @@ export default function App() {
         provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
       } else if (typeof window !== "undefined") {
-        const WalletConnectProvider = (await import("@walletconnect/web3-provider")).default;
-
         const wcProvider = new WalletConnectProvider({
           rpc: {
             1: "https://cloudflare-eth.com",
@@ -44,7 +43,6 @@ export default function App() {
     if (typeof window !== "undefined" && window.ethereum) {
       return new ethers.providers.Web3Provider(window.ethereum);
     } else if (typeof window !== "undefined") {
-      const WalletConnectProvider = (await import("@walletconnect/web3-provider")).default;
       const wcProvider = new WalletConnectProvider({
         rpc: { 1: "https://cloudflare-eth.com" },
       });
