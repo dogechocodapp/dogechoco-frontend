@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import logo from "./assets/logo.png";
+import WalletConnectProvider from "@walletconnect/web3-provider";
 
 const ADMIN_WALLET = "0x4794d0B88F5579117Ca8e7ab8FF8b5f95DbD0213".toLowerCase();
 
@@ -10,14 +11,29 @@ export default function App() {
   const [messages, setMessages] = useState([]);
 
   const connectWallet = async () => {
-    if (!window.ethereum) return alert("Instala MetaMask para continuar");
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      let provider;
+
+      if (window.ethereum) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+      } else {
+        const wcProvider = new WalletConnectProvider({
+          rpc: {
+            1: "https://cloudflare-eth.com", // red Ethereum mainnet
+          },
+        });
+
+        await wcProvider.enable();
+        provider = new ethers.providers.Web3Provider(wcProvider);
+      }
+
       const signer = provider.getSigner();
       const address = await signer.getAddress();
       setWalletAddress(address);
     } catch (err) {
-      alert("No se pudo conectar con MetaMask");
+      console.error(err);
+      alert("No se pudo conectar con MetaMask o WalletConnect");
     }
   };
 
@@ -26,7 +42,7 @@ export default function App() {
     if (!walletAddress) return alert("Conecta tu wallet primero.");
 
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(window.ethereum || window.walletConnectProvider);
       const signer = provider.getSigner();
       const signature = await signer.signMessage(message);
 
@@ -45,7 +61,7 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      alert("❌ Firma cancelada o error con MetaMask");
+      alert("❌ Firma cancelada o error con la wallet");
     }
   };
 
@@ -63,7 +79,7 @@ export default function App() {
     const adminMsg = "Soy el administrador de la dApp";
 
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(window.ethereum || window.walletConnectProvider);
       const signer = provider.getSigner();
       const signature = await signer.signMessage(adminMsg);
 
@@ -85,7 +101,6 @@ export default function App() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-
     } catch (err) {
       console.error("Error al firmar:", err);
       alert("❌ Firma cancelada o error");
