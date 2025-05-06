@@ -9,40 +9,41 @@ export default function App() {
   const [walletAddress, setWalletAddress] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const [provider, setProvider] = useState(null); // Guardamos el provider conectado
 
   const connectWallet = async () => {
     try {
-      let provider;
+      let web3Provider;
 
       if (window.ethereum) {
-        provider = new ethers.providers.Web3Provider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
+        web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+        await web3Provider.send("eth_requestAccounts", []);
       } else {
         const wcProvider = new WalletConnectProvider({
           rpc: {
-            1: "https://cloudflare-eth.com", // red Ethereum mainnet
+            1: "https://cloudflare-eth.com", // Ethereum mainnet
           },
         });
-
         await wcProvider.enable();
-        provider = new ethers.providers.Web3Provider(wcProvider);
+        web3Provider = new ethers.providers.Web3Provider(wcProvider);
       }
 
-      const signer = provider.getSigner();
+      const signer = web3Provider.getSigner();
       const address = await signer.getAddress();
+
       setWalletAddress(address);
+      setProvider(web3Provider);
     } catch (err) {
       console.error(err);
-      alert("No se pudo conectar con MetaMask o WalletConnect");
+      alert("No se pudo conectar con MetaMask o Trust Wallet");
     }
   };
 
   const sendMessage = async () => {
     if (!message.trim()) return alert("Escribe un mensaje primero.");
-    if (!walletAddress) return alert("Conecta tu wallet primero.");
+    if (!walletAddress || !provider) return alert("Conecta tu wallet primero.");
 
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum || window.walletConnectProvider);
       const signer = provider.getSigner();
       const signature = await signer.signMessage(message);
 
@@ -79,7 +80,7 @@ export default function App() {
     const adminMsg = "Soy el administrador de la dApp";
 
     try {
-      const provider = new ethers.providers.Web3Provider(window.ethereum || window.walletConnectProvider);
+      if (!provider) return alert("Conecta tu wallet primero.");
       const signer = provider.getSigner();
       const signature = await signer.signMessage(adminMsg);
 
