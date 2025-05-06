@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import logo from "./assets/logo.png";
-import WalletConnectProvider from "@walletconnect/web3-provider";
 
 const ADMIN_WALLET = "0x4794d0B88F5579117Ca8e7ab8FF8b5f95DbD0213".toLowerCase();
 
@@ -9,41 +8,55 @@ export default function App() {
   const [walletAddress, setWalletAddress] = useState(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
-  const [provider, setProvider] = useState(null); // Guardamos el provider conectado
 
   const connectWallet = async () => {
     try {
-      let web3Provider;
+      let provider;
 
       if (window.ethereum) {
-        web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-        await web3Provider.send("eth_requestAccounts", []);
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
       } else {
+        const WalletConnectProvider = (await import("@walletconnect/web3-provider")).default;
+
         const wcProvider = new WalletConnectProvider({
           rpc: {
-            1: "https://cloudflare-eth.com", // Ethereum mainnet
+            1: "https://cloudflare-eth.com",
           },
         });
+
         await wcProvider.enable();
-        web3Provider = new ethers.providers.Web3Provider(wcProvider);
+        provider = new ethers.providers.Web3Provider(wcProvider);
       }
 
-      const signer = web3Provider.getSigner();
+      const signer = provider.getSigner();
       const address = await signer.getAddress();
-
       setWalletAddress(address);
-      setProvider(web3Provider);
     } catch (err) {
       console.error(err);
-      alert("No se pudo conectar con MetaMask o Trust Wallet");
+      alert("No se pudo conectar con MetaMask o WalletConnect");
+    }
+  };
+
+  const getProvider = async () => {
+    if (window.ethereum) {
+      return new ethers.providers.Web3Provider(window.ethereum);
+    } else {
+      const WalletConnectProvider = (await import("@walletconnect/web3-provider")).default;
+      const wcProvider = new WalletConnectProvider({
+        rpc: { 1: "https://cloudflare-eth.com" },
+      });
+      await wcProvider.enable();
+      return new ethers.providers.Web3Provider(wcProvider);
     }
   };
 
   const sendMessage = async () => {
     if (!message.trim()) return alert("Escribe un mensaje primero.");
-    if (!walletAddress || !provider) return alert("Conecta tu wallet primero.");
+    if (!walletAddress) return alert("Conecta tu wallet primero.");
 
     try {
+      const provider = await getProvider();
       const signer = provider.getSigner();
       const signature = await signer.signMessage(message);
 
@@ -66,21 +79,11 @@ export default function App() {
     }
   };
 
-  const fetchMessages = async () => {
-    try {
-      const res = await fetch("https://dogechoco-backend.onrender.com/api/messages");
-      const data = await res.json();
-      setMessages(data.reverse());
-    } catch (err) {
-      console.error("Error al obtener mensajes:", err);
-    }
-  };
-
   const downloadMessages = async () => {
     const adminMsg = "Soy el administrador de la dApp";
 
     try {
-      if (!provider) return alert("Conecta tu wallet primero.");
+      const provider = await getProvider();
       const signer = provider.getSigner();
       const signature = await signer.signMessage(adminMsg);
 
@@ -105,6 +108,16 @@ export default function App() {
     } catch (err) {
       console.error("Error al firmar:", err);
       alert("❌ Firma cancelada o error");
+    }
+  };
+
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch("https://dogechoco-backend.onrender.com/api/messages");
+      const data = await res.json();
+      setMessages(data.reverse());
+    } catch (err) {
+      console.error("Error al obtener mensajes:", err);
     }
   };
 
