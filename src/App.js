@@ -13,10 +13,10 @@ export default function App() {
     try {
       let provider;
 
-      if (window.ethereum) {
+      if (typeof window !== "undefined" && window.ethereum) {
         provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
-      } else {
+      } else if (typeof window !== "undefined") {
         const WalletConnectProvider = (await import("@walletconnect/web3-provider")).default;
 
         const wcProvider = new WalletConnectProvider({
@@ -27,6 +27,8 @@ export default function App() {
 
         await wcProvider.enable();
         provider = new ethers.providers.Web3Provider(wcProvider);
+      } else {
+        throw new Error("No hay entorno de navegador");
       }
 
       const signer = provider.getSigner();
@@ -39,15 +41,17 @@ export default function App() {
   };
 
   const getProvider = async () => {
-    if (window.ethereum) {
+    if (typeof window !== "undefined" && window.ethereum) {
       return new ethers.providers.Web3Provider(window.ethereum);
-    } else {
+    } else if (typeof window !== "undefined") {
       const WalletConnectProvider = (await import("@walletconnect/web3-provider")).default;
       const wcProvider = new WalletConnectProvider({
         rpc: { 1: "https://cloudflare-eth.com" },
       });
       await wcProvider.enable();
       return new ethers.providers.Web3Provider(wcProvider);
+    } else {
+      throw new Error("No hay entorno de navegador");
     }
   };
 
